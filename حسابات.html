@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>الخزنة</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- مكتبات Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
+    <style>
+        :root {
+            --primary: #1e3799;
+            --secondary: #4a69bd;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --dark: #2f3640;
+            --light: #f5f6fa;
+            --white: #ffffff;
+            --border: #dcdde1;
+            --card-bg: #ffffff;
+            --text-color: #2f3640;
+            --table-head: #f8f9fa;
+        }
+
+        [data-theme="dark"] {
+            --primary: #4a69bd;
+            --secondary: #6a89cc;
+            --dark: #f5f6fa;
+            --light: #1e272e;
+            --white: #2f3640;
+            --border: #485460;
+            --card-bg: #2f3640;
+            --text-color: #f5f6fa;
+            --table-head: #1e272e;
+        }
+
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background-color: var(--light); margin: 0; padding: 15px; color: var(--text-color); transition: 0.3s; }
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* شريط حالة السيرفر */
+        .status-bar { 
+            background: var(--card-bg); padding: 8px 18px; border-radius: 50px; 
+            display: inline-flex; align-items: center; gap: 10px; 
+            margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 13px; font-weight: 600; border: 1px solid var(--border);
+        }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .online { background-color: var(--success); box-shadow: 0 0 8px var(--success); }
+        .offline { background-color: var(--danger); box-shadow: 0 0 8px var(--danger); }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid var(--border);
+            flex-wrap: wrap; gap: 15px;
+        }
+        .header h1 { margin: 0; color: var(--primary); font-size: 24px; display: flex; align-items: center; gap: 10px; }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .dashboard {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px; margin-bottom: 25px;
+        }
+        .card {
+            background: var(--card-bg); padding: 20px; border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); display: flex;
+            align-items: center; justify-content: space-between; transition: 0.3s;
+        }
+        .card:hover { transform: translateY(-3px); }
+        .card-info h3 { margin: 0 0 8px 0; color: #7f8fa6; font-size: 15px; font-weight: 600; }
+        .card-info .amount { font-size: 24px; font-weight: 700; }
+        
+        .card-icon {
+            width: 55px; height: 55px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 22px;
+        }
+        .icon-in { background: rgba(46, 204, 113, 0.1); color: var(--success); }
+        .icon-out { background: rgba(231, 76, 60, 0.1); color: var(--danger); }
+        .icon-safe { background: rgba(30, 55, 153, 0.1); color: var(--primary); }
+
+        .glass-panel {
+            background: var(--card-bg); padding: 20px; border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 25px;
+        }
+        .section-title { margin-top: 0; margin-bottom: 15px; font-size: 17px; border-right: 4px solid var(--primary); padding-right: 10px; }
+        .forms-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px; border: 1px solid var(--border);
+            border-radius: 8px; font-size: 14px; outline: none; background: var(--card-bg); color: var(--text-color);
+            transition: 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
+
+        button {
+            padding: 10px 15px; border: none; border-radius: 8px;
+            font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.3s;
+            display: flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
+        }
+        .btn-add { background-color: var(--primary); color: #ffffff; height: 42px; width: 100%; }
+        .btn-add:hover { background-color: var(--secondary); }
+        .btn-control { background-color: var(--secondary); color: #ffffff; }
+        .btn-success { background-color: var(--success); color: #ffffff; }
+        .btn-warning { background-color: #f39c12; color: #ffffff; }
+        .btn-dark { background-color: var(--dark); color: #ffffff; }
+
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 700px; }
+        table th, table td { padding: 12px; text-align: right; border-bottom: 1px solid var(--border); font-size: 14px; }
+        table th { background-color: var(--table-head); font-weight: 700; }
+        table tbody tr:hover { background-color: rgba(0,0,0,0.02); }
+        
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .badge-in { background: rgba(46, 204, 113, 0.1); color: var(--success); }
+        .badge-out { background: rgba(231, 76, 60, 0.1); color: var(--danger); }
+        
+        .client-name { font-weight: bold; color: var(--primary); background: rgba(30,55,153,0.08); padding: 3px 8px; border-radius: 5px; }
+
+        .action-btns { display: flex; gap: 6px; }
+        .btn-icon { background: transparent; padding: 5px; font-size: 15px; border-radius: 5px; color: var(--text-color); }
+        .btn-icon.delete:hover { background-color: rgba(231, 76, 60, 0.1); color: var(--danger); }
+        .btn-icon.print:hover { background-color: rgba(46, 204, 113, 0.1); color: var(--success); }
+
+        .filters { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .filters input, .filters select { padding: 9px; border: 1px solid var(--border); border-radius: 8px; flex: 1; min-width: 180px; background: var(--card-bg); color: var(--text-color); }
+
+        #loadingIndicator { position: fixed; bottom: 20px; left: 20px; background: var(--primary); color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; display: none; z-index: 1000; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+
+        @media print {
+            body { background: white; padding: 0; color: black; }
+            .glass-panel:first-of-type, .filters, .header-actions, .action-col, .action-btns, #loadingIndicator, .status-bar { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #ddd; }
+            .glass-panel { box-shadow: none; padding: 0; }
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+<div id="loadingIndicator"><i class="fa-solid fa-spinner fa-spin"></i> جاري المزامنة مع السيرفر...</div>
+
+<div class="container">
+    <!-- شريط حالة السيرفر -->
+    <div>
+        <div class="status-bar">
+            <div id="statusDot" class="status-dot offline"></div>
+            <span id="statusText">جاري الاتصال بالسيرفر...</span>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1><i class="fa-solid fa-vault"></i> الخزنة</h1>
+        <div class="header-actions">
+            <button class="btn-control" onclick="toggleTheme()" id="themeBtn" title="الوضع الليلي"><i class="fa-solid fa-moon"></i></button>
+            <button class="btn-success" onclick="exportBackup()" title="تنزيل نسخة احتياطية"><i class="fa-solid fa-download"></i> تنزيل</button>
+            <button class="btn-warning" onclick="document.getElementById('importFile').click()" title="استيراد نسخة احتياطية"><i class="fa-solid fa-upload"></i> استيراد</button>
+            <input type="file" id="importFile" style="display: none;" accept=".json" onchange="importBackup(event)">
+            <button class="btn-control" onclick="window.print()"><i class="fa-solid fa-print"></i> طباعة</button>
+        </div>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <div class="card-info">
+                <h3>إجمالي المقبوضات</h3>
+                <div class="amount" style="color: var(--success);" id="totalIn">0.00 ج.م</div>
+            </div>
+            <div class="card-icon icon-in"><i class="fa-solid fa-arrow-trend-up"></i></div>
+        </div>
+        <div class="card">
+            <div class="card-info">
+                <h3>إجمالي المصروفات</h3>
+                <div class="amount" style="color: var(--danger);" id="totalOut">0.00 ج.م</div>
+            </div>
+            <div class="card-icon icon-out"><i class="fa-solid fa-arrow-trend-down"></i></div>
+        </div>
+        <div class="card">
+            <div class="card-info">
+                <h3>صافي رصيد الخزنة</h3>
+                <div class="amount" id="safeBalance">0.00 ج.م</div>
+            </div>
+            <div class="card-icon icon-safe"><i class="fa-solid fa-wallet"></i></div>
+        </div>
+    </div>
+
+    <div class="glass-panel">
+        <h3 class="section-title">إضافة حركة جديدة</h3>
+        <div class="forms-grid">
+            <div class="form-group">
+                <label>نوع الحركة</label>
+                <select id="docType">
+                    <option value="in">سند قبض (استلام)</option>
+                    <option value="out">سند صرف (خروج)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>العملة</label>
+                <select id="docCurrency" onchange="toggleExchangeRate()">
+                    <option value="EGP">جنيه مصري (EGP)</option>
+                    <option value="SAR">ريال سعودي (SAR)</option>
+                </select>
+            </div>
+            <div class="form-group" id="exchangeRateGroup" style="display: none;">
+                <label>سعر الصرف (قيمة الريال بالجنيه)</label>
+                <input type="number" id="docExchangeRate" placeholder="بدون تحويل لو فارغة" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>المبلغ بالعملة المختارة</label>
+                <input type="number" id="docAmount" placeholder="0.00" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>جهة التعامل / العميل</label>
+                <input type="text" id="docClient" list="clientsList" placeholder="اسم الشخص أو الشركة...">
+                <datalist id="clientsList"></datalist>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>البيان / الملاحظات</label>
+                <input type="text" id="docNotes" placeholder="تفاصيل الحركة...">
+            </div>
+            <div class="form-group">
+                <label>التاريخ</label>
+                <input type="date" id="docDate">
+            </div>
+            <div class="form-group">
+                <button class="btn-add" onclick="addDocument()"><i class="fa-solid fa-plus"></i> حفظ السند</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-panel">
+        <h3 class="section-title">سجل الحركات التفصيلي</h3>
+        <div class="filters">
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 ابحث بأي شيء (المبلغ، العميل، البيان، التاريخ)...">
+            <select id="filterType" onchange="filterTable()">
+                <option value="all">عرض كل الحركات</option>
+                <option value="in">المقبوضات فقط</option>
+                <option value="out">المصروفات فقط</option>
+            </select>
+        </div>
+
+        <div class="table-responsive">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>رقم السند</th>
+                        <th>النوع</th>
+                        <th>جهة التعامل</th>
+                        <th>المبلغ الأصلي</th>
+                        <th>المبلغ بالجنيه</th>
+                        <th>البيان</th>
+                        <th>التاريخ</th>
+                        <th class="action-col">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyD6Wz5XISCyBnSvdt_1JInLt90MNEX7g2k",
+        authDomain: "mohamed-fathi.firebaseapp.com",
+        databaseURL: "https://mohamed-fathi-default-rtdb.firebaseio.com",
+        projectId: "mohamed-fathi",
+        storageBucket: "mohamed-fathi.firebasestorage.app",
+        messagingSenderId: "19267027508",
+        appId: "1:19267027508:web:73c0418d3cac91172e0061"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // مراقبة حالة الاتصال بالسيرفر
+    const connectedRef = db.ref(".info/connected");
+    connectedRef.on("value", (snap) => {
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        
+        if (snap.val() === true) {
+            statusDot.className = "status-dot online";
+            statusText.innerText = "متصل بالسيرفر";
+        } else {
+            statusDot.className = "status-dot offline";
+            statusText.innerText = "غير متصل بالسيرفر";
+        }
+    });
+
+    document.getElementById('docDate').valueAsDate = new Date();
+    let transactions = [];
+
+    if(localStorage.getItem('alKhaznaTheme') === 'dark') {
+        document.body.setAttribute('data-theme', 'dark');
+        document.getElementById('themeBtn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+    }
+
+    function toggleTheme() {
+        if(document.body.getAttribute('data-theme') === 'dark') {
+            document.body.setAttribute('data-theme', 'light');
+            localStorage.setItem('alKhaznaTheme', 'light');
+            document.getElementById('themeBtn').innerHTML = '<i class="fa-solid fa-moon"></i>';
+        } else {
+            document.body.setAttribute('data-theme', 'dark');
+            localStorage.setItem('alKhaznaTheme', 'dark');
+            document.getElementById('themeBtn').innerHTML = '<i class="fa-solid fa-sun"></i>';
+        }
+    }
+
+    function toggleExchangeRate() {
+        const currency = document.getElementById('docCurrency').value;
+        const rateGroup = document.getElementById('exchangeRateGroup');
+        rateGroup.style.display = currency === 'SAR' ? 'block' : 'none';
+    }
+
+    function updateClientsList() {
+        const datalist = document.getElementById('clientsList');
+        const uniqueClients = [...new Set(transactions.map(t => t.client).filter(c => c))];
+        datalist.innerHTML = '';
+        uniqueClients.forEach(client => {
+            const option = document.createElement('option');
+            option.value = client;
+            datalist.appendChild(option);
+        });
+    }
+
+    function formatMoney(amount, currency = 'ج.م') {
+        return parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
+    }
+
+    function fetchTransactions() {
+        showLoader(true);
+        db.ref('transactions').on('value', (snapshot) => {
+            const data = snapshot.val();
+            transactions = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    transactions.push({ firebaseKey: key, ...data[key] });
+                });
+            }
+            updateUI();
+            showLoader(false);
+        }, (error) => {
+            console.error(error);
+            showLoader(false);
+        });
+    }
+
+    function showLoader(show) {
+        document.getElementById('loadingIndicator').style.display = show ? 'block' : 'none';
+    }
+
+    function addDocument() {
+        const type = document.getElementById('docType').value;
+        const currency = document.getElementById('docCurrency').value;
+        let amount = parseFloat(document.getElementById('docAmount').value);
+        const client = document.getElementById('docClient').value.trim();
+        const notes = document.getElementById('docNotes').value.trim();
+        const date = document.getElementById('docDate').value;
+
+        if (!amount || amount <= 0 || notes === '' || client === '') {
+            alert("⚠️ يرجى التأكد من إدخال المبلغ، اسم الجهة، والبيان بشكل صحيح.");
+            return;
+        }
+
+        let exchangeRateInput = document.getElementById('docExchangeRate').value;
+        let exchangeRate = exchangeRateInput ? parseFloat(exchangeRateInput) : null;
+        let finalAmountInEGP = 0;
+
+        if(currency === 'SAR') {
+            if(exchangeRate && exchangeRate > 0) {
+                finalAmountInEGP = amount * exchangeRate;
+            } else {
+                finalAmountInEGP = 0;
+            }
+        } else {
+            finalAmountInEGP = amount;
+        }
+
+        const newDoc = {
+            id: Date.now(),
+            type: type,
+            currency: currency,
+            amount: amount,
+            exchangeRate: exchangeRate,
+            finalAmountInEGP: finalAmountInEGP,
+            client: client,
+            notes: notes,
+            date: date
+        };
+
+        showLoader(true);
+        db.ref('transactions').push(newDoc, (error) => {
+            showLoader(false);
+            if (error) {
+                alert("❌ حدث خطأ أثناء الحفظ بالسحابة.");
+            } else {
+                document.getElementById('docAmount').value = '';
+                document.getElementById('docNotes').value = '';
+                document.getElementById('docClient').value = '';
+                document.getElementById('docExchangeRate').value = '';
+            }
+        });
+    }
+
+    function deleteDocument(firebaseKey) {
+        if (confirm("⚠️ هل أنت متأكد من رغبتك في حذف هذا السند نهائياً من السحابة؟")) {
+            let password = prompt("🔒 يرجى إدخال كلمة المرور (للمدير):");
+            if (password === "7625") {
+                showLoader(true);
+                db.ref('transactions/' + firebaseKey).remove((error) => {
+                    showLoader(false);
+                    if(error) alert("❌ خطأ أثناء الحذف.");
+                });
+            } else if (password !== null) {
+                alert("❌ كلمة المرور غير صحيحة!");
+            }
+        }
+    }
+
+    function printReceipt(id) {
+        const doc = transactions.find(t => t.id === id);
+        if(!doc) return;
+
+        const typeName = doc.type === 'in' ? 'سند قبض نقدية' : 'سند صرف نقدية';
+        const color = doc.type === 'in' ? '#2ecc71' : '#e74c3c';
+        const egpDisplay = (doc.currency === 'SAR' && (!doc.exchangeRate || doc.exchangeRate <= 0)) ? 'لا يوجد (بدون سعر صرف)' : formatMoney(doc.finalAmountInEGP);
+
+        const printWindow = window.open('', '', 'width=600,height=500');
+        printWindow.document.write(`
+            <html dir="rtl">
+            <head>
+                <title>طباعة ${typeName}</title>
+                <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Cairo', sans-serif; padding: 20px; color: #333; }
+                    .receipt-box { border: 2px solid #ccc; padding: 30px; border-radius: 10px; max-width: 500px; margin: auto; }
+                    .header { text-align: center; border-bottom: 2px dashed #ccc; padding-bottom: 15px; margin-bottom: 20px; }
+                    .header h2 { margin: 0; color: ${color}; }
+                    .row { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+                    .label { font-weight: bold; color: #555; }
+                    .signature { display: flex; justify-content: space-between; margin-top: 40px; font-weight: bold;}
+                    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #777; }
+                </style>
+            </head>
+            <body>
+                <div class="receipt-box">
+                    <div class="header">
+                        <h2>${typeName}</h2>
+                        <p>رقم السند: #${doc.id.toString().slice(-6)}</p>
+                    </div>
+                    <div class="row"><span class="label">التاريخ:</span> <span>${doc.date}</span></div>
+                    <div class="row"><span class="label">جهة التعامل:</span> <span>${doc.client}</span></div>
+                    <div class="row"><span class="label">المبلغ:</span> <span style="font-weight:bold;">${formatMoney(doc.amount, doc.currency === 'SAR' ? 'ريال' : 'ج.م')}</span></div>
+                    ${doc.currency === 'SAR' ? `<div class="row"><span class="label">المبلغ بالجنيه:</span> <span>${egpDisplay}</span></div>` : ''}
+                    <div class="row"><span class="label">البيان:</span> <span>${doc.notes}</span></div>
+                    <div class="signature"><span>توقيع المستلم</span><span>توقيع المحاسب</span></div>
+                    <div class="footer">صادر من نظام الخزنة</div>
+                </div>
+                <script>window.onload = function() { window.print(); window.close(); }<\/script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    }
+
+    function exportBackup() {
+        const dataStr = JSON.stringify(transactions, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `AlKhazna_Backup_${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importBackup(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (!Array.isArray(importedData)) {
+                    alert("❌ ملف النسخة الاحتياطية غير صالح.");
+                    return;
+                }
+
+                if (confirm(`⚠️ هل أنت متأكد من استيراد ${importedData.length} حركة وإضافتها إلى السحابة؟`)) {
+                    showLoader(true);
+                    let promises = importedData.map(item => {
+                        delete item.firebaseKey; // إزالة المفتاح القديم إن وجد لكي لا يحدث تضارب
+                        return db.ref('transactions').push(item);
+                    });
+
+                    Promise.all(promises).then(() => {
+                        showLoader(false);
+                        alert("✅ تم استيراد النسخة الاحتياطية بنجاح وتحديث السحابة!");
+                        event.target.value = ''; // تصفير الملف المختار
+                    }).catch(err => {
+                        showLoader(false);
+                        alert("❌ حدث خطأ أثناء رفع البيانات المستوردة.");
+                    });
+                }
+            } catch (error) {
+                alert("❌ حدث خطأ أثناء قراءة الملف، تأكد أنه ملف JSON صحيح.");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function updateUI(filteredData = transactions) {
+        let totalIn = 0;
+        let totalOut = 0;
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+
+        const sortedData = [...filteredData].sort((a, b) => b.id - a.id);
+
+        sortedData.forEach((doc) => {
+            if (doc.type === 'in') totalIn += doc.finalAmountInEGP;
+            if (doc.type === 'out') totalOut += doc.finalAmountInEGP;
+
+            const row = document.createElement('tr');
+            const typeBadge = doc.type === 'in' 
+                ? '<span class="badge badge-in"><i class="fa-solid fa-arrow-down"></i> استلام</span>' 
+                : '<span class="badge badge-out"><i class="fa-solid fa-arrow-up"></i> صرف</span>';
+            
+            const currencySymbol = doc.currency === 'SAR' ? 'ريال' : 'ج.م';
+            
+            let egpColumnText = '';
+            if(doc.currency === 'SAR' && (!doc.exchangeRate || doc.exchangeRate <= 0)) {
+                egpColumnText = '<span style="color: #e74c3c; font-weight: bold;">لا يوجد (بدون سعر صرف)</span>';
+            } else {
+                egpColumnText = `<span style="font-weight: bold; color: ${doc.type === 'in' ? 'var(--success)' : 'var(--danger)'}">${formatMoney(doc.finalAmountInEGP)}</span>`;
+            }
+
+            row.innerHTML = `
+                <td>#${doc.id.toString().slice(-6)}</td>
+                <td>${typeBadge}</td>
+                <td><span class="client-name"><i class="fa-solid fa-user-tie"></i> ${doc.client || 'غير محدد'}</span></td>
+                <td>${formatMoney(doc.amount, currencySymbol)}</td>
+                <td>${egpColumnText}</td>
+                <td>${doc.notes}</td>
+                <td>${doc.date}</td>
+                <td class="action-col">
+                    <div class="action-btns">
+                        <button class="btn-icon print" onclick="printReceipt(${doc.id})" title="طباعة وصل"><i class="fa-solid fa-print"></i></button>
+                        <button class="btn-icon delete" onclick="deleteDocument('${doc.firebaseKey}')" title="حذف"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        if (filteredData === transactions) {
+            const netBalance = totalIn - totalOut;
+            document.getElementById('totalIn').innerText = formatMoney(totalIn);
+            document.getElementById('totalOut').innerText = formatMoney(totalOut);
+            
+            const balanceElement = document.getElementById('safeBalance');
+            balanceElement.innerText = formatMoney(netBalance);
+            balanceElement.style.color = netBalance < 0 ? 'var(--danger)' : 'var(--primary)';
+        }
+        
+        updateClientsList();
+    }
+
+    function filterTable() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const typeFilter = document.getElementById('filterType').value;
+
+        const filtered = transactions.filter(doc => {
+            const idStr = '#' + doc.id.toString().slice(-6);
+            const notesMatch = doc.notes.toLowerCase().includes(searchText);
+            const clientMatch = doc.client && doc.client.toLowerCase().includes(searchText);
+            const amountMatch = doc.amount.toString().includes(searchText);
+            const egpMatch = doc.finalAmountInEGP.toString().includes(searchText);
+            const dateMatch = doc.date.includes(searchText);
+            const typeText = doc.type === 'in' ? 'استلام قبض' : 'صرف';
+            const typeMatch = typeText.includes(searchText);
+            const idMatch = idStr.includes(searchText);
+
+            const matchText = notesMatch || clientMatch || amountMatch || egpMatch || dateMatch || typeMatch || idMatch;
+            const matchType = typeFilter === 'all' || doc.type === typeFilter;
+            
+            return matchText && matchType;
+        });
+
+        updateUI(filtered);
+    }
+
+    fetchTransactions();
+</script>
+
+</body>
+</html>
