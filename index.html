@@ -81,6 +81,7 @@
         .icon-in { background: rgba(46, 204, 113, 0.1); color: var(--success); }
         .icon-out { background: rgba(231, 76, 60, 0.1); color: var(--danger); }
         .icon-safe { background: rgba(30, 55, 153, 0.1); color: var(--primary); }
+        .icon-sar { background: rgba(243, 156, 18, 0.12); color: #d68910; }
 
         .glass-panel {
             background: var(--card-bg); padding: 20px; border-radius: 12px;
@@ -183,6 +184,13 @@
                 <div class="amount" id="safeBalance">0.00 ج.م</div>
             </div>
             <div class="card-icon icon-safe"><i class="fa-solid fa-wallet"></i></div>
+        </div>
+        <div class="card">
+            <div class="card-info">
+                <h3>صافي رصيد الريال</h3>
+                <div class="amount" id="sarBalance" style="color:#d68910;">0.00 ريال</div>
+            </div>
+            <div class="card-icon icon-sar"><i class="fa-solid fa-coins"></i></div>
         </div>
     </div>
 
@@ -327,8 +335,42 @@
         });
     }
 
+    function toNumber(value) {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : 0;
+    }
+
+    function getEgpAmount(doc) {
+        const amount = toNumber(doc.amount);
+        if (doc.currency === 'SAR') {
+            const rate = toNumber(doc.exchangeRate);
+            return rate > 0 ? amount * rate : 0;
+        }
+        return amount;
+    }
+
+    function getSarAmount(doc) {
+        return doc.currency === 'SAR' ? toNumber(doc.amount) : 0;
+    }
+
     function formatMoney(amount, currency = 'ج.م') {
-        return parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
+        return toNumber(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
+    }
+
+    function normalizeDocument(firebaseKey, raw) {
+        const doc = raw || {};
+        return {
+            firebaseKey,
+            id: toNumber(doc.id) || Date.now(),
+            type: doc.type === 'out' ? 'out' : 'in',
+            currency: doc.currency === 'SAR' ? 'SAR' : 'EGP',
+            amount: toNumber(doc.amount),
+            exchangeRate: toNumber(doc.exchangeRate) || null,
+            finalAmountInEGP: getEgpAmount(doc),
+            client: String(doc.client || ''),
+            notes: String(doc.notes || ''),
+            date: String(doc.date || '')
+        };
     }
 
     function fetchTransactions() {
@@ -337,8 +379,8 @@
             const data = snapshot.val();
             transactions = [];
             if (data) {
-                Object.keys(data).forEach(key => {
-                    transactions.push({ firebaseKey: key, ...data[key] });
+                Object.entries(data).forEach(([key, value]) => {
+                    transactions.push(normalizeDocument(key, value));
                 });
             }
             updateUI();
@@ -368,17 +410,9 @@
 
         let exchangeRateInput = document.getElementById('docExchangeRate').value;
         let exchangeRate = exchangeRateInput ? parseFloat(exchangeRateInput) : null;
-        let finalAmountInEGP = 0;
-
-        if(currency === 'SAR') {
-            if(exchangeRate && exchangeRate > 0) {
-                finalAmountInEGP = amount * exchangeRate;
-            } else {
-                finalAmountInEGP = 0;
-            }
-        } else {
-            finalAmountInEGP = amount;
-        }
+        const finalAmountInEGP = currency === 'SAR' && exchangeRate && exchangeRate > 0
+            ? amount * exchangeRate
+            : currency === 'EGP' ? amount : 0;
 
         const newDoc = {
             id: Date.now(),
@@ -517,14 +551,24 @@
     function updateUI(filteredData = transactions) {
         let totalIn = 0;
         let totalOut = 0;
+        let totalSarIn = 0;
+        let totalSarOut = 0;
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
 
         const sortedData = [...filteredData].sort((a, b) => b.id - a.id);
 
         sortedData.forEach((doc) => {
-            if (doc.type === 'in') totalIn += doc.finalAmountInEGP;
-            if (doc.type === 'out') totalOut += doc.finalAmountInEGP;
+            const egpAmount = getEgpAmount(doc);
+            const sarAmount = getSarAmount(doc);
+            if (doc.type === 'in') {
+                totalIn += egpAmount;
+                totalSarIn += sarAmount;
+            }
+            if (doc.type === 'out') {
+                totalOut += egpAmount;
+                totalSarOut += sarAmount;
+            }
 
             const row = document.createElement('tr');
             const typeBadge = doc.type === 'in' 
@@ -560,12 +604,17 @@
 
         if (filteredData === transactions) {
             const netBalance = totalIn - totalOut;
+            const netSarBalance = totalSarIn - totalSarOut;
             document.getElementById('totalIn').innerText = formatMoney(totalIn);
             document.getElementById('totalOut').innerText = formatMoney(totalOut);
-            
+
             const balanceElement = document.getElementById('safeBalance');
             balanceElement.innerText = formatMoney(netBalance);
             balanceElement.style.color = netBalance < 0 ? 'var(--danger)' : 'var(--primary)';
+
+            const sarElement = document.getElementById('sarBalance');
+            sarElement.innerText = formatMoney(netSarBalance, 'ريال');
+            sarElement.style.color = netSarBalance < 0 ? 'var(--danger)' : '#d68910';
         }
         
         updateClientsList();
@@ -577,11 +626,11 @@
 
         const filtered = transactions.filter(doc => {
             const idStr = '#' + doc.id.toString().slice(-6);
-            const notesMatch = doc.notes.toLowerCase().includes(searchText);
-            const clientMatch = doc.client && doc.client.toLowerCase().includes(searchText);
+            const notesMatch = String(doc.notes || '').toLowerCase().includes(searchText);
+            const clientMatch = String(doc.client || '').toLowerCase().includes(searchText);
             const amountMatch = doc.amount.toString().includes(searchText);
             const egpMatch = doc.finalAmountInEGP.toString().includes(searchText);
-            const dateMatch = doc.date.includes(searchText);
+            const dateMatch = String(doc.date || '').includes(searchText);
             const typeText = doc.type === 'in' ? 'استلام قبض' : 'صرف';
             const typeMatch = typeText.includes(searchText);
             const idMatch = idStr.includes(searchText);
