@@ -82,6 +82,9 @@
         .icon-out { background: rgba(231, 76, 60, 0.1); color: var(--danger); }
         .icon-safe { background: rgba(30, 55, 153, 0.1); color: var(--primary); }
         .icon-sar { background: rgba(243, 156, 18, 0.12); color: #d68910; }
+        .icon-party { background: rgba(155, 89, 182, 0.12); color: #8e44ad; }
+        .party-dashboard { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:15px; margin:-10px 0 25px; }
+        .party-dashboard .card { padding:14px 20px; }
 
         .glass-panel {
             background: var(--card-bg); padding: 20px; border-radius: 12px;
@@ -166,32 +169,74 @@
     <div class="dashboard">
         <div class="card">
             <div class="card-info">
-                <h3>إجمالي المقبوضات</h3>
+                <h3>إيرادات خزنة الجنيه</h3>
                 <div class="amount" style="color: var(--success);" id="totalIn">0.00 ج.م</div>
             </div>
             <div class="card-icon icon-in"><i class="fa-solid fa-arrow-trend-up"></i></div>
         </div>
         <div class="card">
             <div class="card-info">
-                <h3>إجمالي المصروفات</h3>
+                <h3>مصروفات خزنة الجنيه</h3>
                 <div class="amount" style="color: var(--danger);" id="totalOut">0.00 ج.م</div>
             </div>
             <div class="card-icon icon-out"><i class="fa-solid fa-arrow-trend-down"></i></div>
         </div>
         <div class="card">
             <div class="card-info">
-                <h3>صافي رصيد الخزنة</h3>
+                <h3>صافي خزنة الجنيه</h3>
                 <div class="amount" id="safeBalance">0.00 ج.م</div>
             </div>
             <div class="card-icon icon-safe"><i class="fa-solid fa-wallet"></i></div>
         </div>
         <div class="card">
             <div class="card-info">
-                <h3>صافي رصيد الريال</h3>
+                <h3>إيرادات خزنة الريال</h3>
+                <div class="amount" id="totalSarIn" style="color:#d68910;">0.00 ريال</div>
+            </div>
+            <div class="card-icon icon-sar"><i class="fa-solid fa-arrow-trend-up"></i></div>
+        </div>
+        <div class="card">
+            <div class="card-info">
+                <h3>مصروفات خزنة الريال</h3>
+                <div class="amount" id="totalSarOut" style="color:var(--danger);">0.00 ريال</div>
+            </div>
+            <div class="card-icon icon-out"><i class="fa-solid fa-arrow-trend-down"></i></div>
+        </div>
+        <div class="card">
+            <div class="card-info">
+                <h3>صافي خزنة الريال</h3>
                 <div class="amount" id="sarBalance" style="color:#d68910;">0.00 ريال</div>
             </div>
             <div class="card-icon icon-sar"><i class="fa-solid fa-coins"></i></div>
         </div>
+    </div>
+
+    <div class="party-dashboard">
+        <div class="card">
+            <div class="card-info"><h3>عدد العملاء</h3><div class="amount" id="clientCount">0</div></div>
+            <div class="card-icon icon-party"><i class="fa-solid fa-user-group"></i></div>
+        </div>
+        <div class="card">
+            <div class="card-info"><h3>عدد الموردين</h3><div class="amount" id="supplierCount">0</div></div>
+            <div class="card-icon icon-party"><i class="fa-solid fa-truck-field"></i></div>
+        </div>
+    </div>
+
+    <div class="glass-panel" id="statementPanel">
+        <h3 class="section-title">كشف حساب عميل أو مورد</h3>
+        <div class="filters">
+            <select id="statementParty" onchange="showAccountStatement()" style="flex:2;">
+                <option value="">اختر عميلًا أو موردًا</option>
+            </select>
+            <button class="btn-control" onclick="printStatement()"><i class="fa-solid fa-print"></i> طباعة الكشف</button>
+        </div>
+        <div class="dashboard" style="margin-bottom:15px;">
+            <div class="card"><div class="card-info"><h3>إيرادات الجنيه للطرف</h3><div class="amount" id="statementEgpIn">0.00 ج.م</div></div><div class="card-icon icon-in"><i class="fa-solid fa-arrow-trend-up"></i></div></div>
+            <div class="card"><div class="card-info"><h3>مصروفات الجنيه للطرف</h3><div class="amount" id="statementEgpOut">0.00 ج.م</div></div><div class="card-icon icon-out"><i class="fa-solid fa-arrow-trend-down"></i></div></div>
+            <div class="card"><div class="card-info"><h3>صافي الجنيه للطرف</h3><div class="amount" id="statementEgpNet">0.00 ج.م</div></div><div class="card-icon icon-safe"><i class="fa-solid fa-file-invoice-dollar"></i></div></div>
+            <div class="card"><div class="card-info"><h3>صافي الريال للطرف</h3><div class="amount" id="statementSarNet" style="color:#d68910;">0.00 ريال</div></div><div class="card-icon icon-sar"><i class="fa-solid fa-coins"></i></div></div>
+        </div>
+        <div class="table-responsive"><table><thead><tr><th>التاريخ</th><th>النوع</th><th>العملة</th><th>المبلغ</th><th>البيان</th></tr></thead><tbody id="statementBody"><tr><td colspan="5" style="text-align:center;">اختر عميلًا أو موردًا لعرض كشف الحساب</td></tr></tbody></table></div>
     </div>
 
     <div class="glass-panel">
@@ -200,7 +245,7 @@
             <div class="form-group">
                 <label>نوع الحركة</label>
                 <select id="docType">
-                    <option value="in">سند قبض (استلام)</option>
+                    <option value="in">سند إيراد</option>
                     <option value="out">سند صرف (خروج)</option>
                 </select>
             </div>
@@ -220,8 +265,15 @@
                 <input type="number" id="docAmount" placeholder="0.00" min="0" step="0.01">
             </div>
             <div class="form-group">
-                <label>جهة التعامل / العميل</label>
-                <input type="text" id="docClient" list="clientsList" placeholder="اسم الشخص أو الشركة...">
+                <label>نوع الطرف</label>
+                <select id="docPartyType">
+                    <option value="client">عميل</option>
+                    <option value="supplier">مورد</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>العميل / المورد</label>
+                <input type="text" id="docClient" list="clientsList" placeholder="اسم العميل أو المورد...">
                 <datalist id="clientsList"></datalist>
             </div>
             <div class="form-group" style="grid-column: span 2;">
@@ -244,7 +296,7 @@
             <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 ابحث بأي شيء (المبلغ، العميل، البيان، التاريخ)...">
             <select id="filterType" onchange="filterTable()">
                 <option value="all">عرض كل الحركات</option>
-                <option value="in">المقبوضات فقط</option>
+                        <option value="in">الإيرادات فقط</option>
                 <option value="out">المصروفات فقط</option>
             </select>
         </div>
@@ -255,9 +307,10 @@
                     <tr>
                         <th>رقم السند</th>
                         <th>النوع</th>
-                        <th>جهة التعامل</th>
+                        <th>نوع الطرف</th>
+                        <th>العميل / المورد</th>
                         <th>المبلغ الأصلي</th>
-                        <th>المبلغ بالجنيه</th>
+                        <th>المبلغ المحول بالجنيه</th>
                         <th>البيان</th>
                         <th>التاريخ</th>
                         <th class="action-col">إجراءات</th>
@@ -333,6 +386,23 @@
             option.value = client;
             datalist.appendChild(option);
         });
+
+        const selector = document.getElementById('statementParty');
+        if (!selector) return;
+        const previous = selector.value;
+        const parties = new Map();
+        transactions.forEach(doc => {
+            if (doc.client) parties.set(`${doc.partyType}|${doc.client}`, doc.partyType === 'supplier' ? 'مورد' : 'عميل');
+        });
+        selector.innerHTML = '<option value="">اختر عميلًا أو موردًا</option>';
+        [...parties.keys()].sort((a, b) => a.localeCompare(b, 'ar')).forEach(key => {
+            const [partyType, name] = key.split('|');
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = `${partyType === 'supplier' ? 'مورد' : 'عميل'}: ${name}`;
+            selector.appendChild(option);
+        });
+        if ([...selector.options].some(option => option.value === previous)) selector.value = previous;
     }
 
     function toNumber(value) {
@@ -363,6 +433,7 @@
             firebaseKey,
             id: toNumber(doc.id) || Date.now(),
             type: doc.type === 'out' ? 'out' : 'in',
+            partyType: doc.partyType === 'supplier' ? 'supplier' : 'client',
             currency: doc.currency === 'SAR' ? 'SAR' : 'EGP',
             amount: toNumber(doc.amount),
             exchangeRate: toNumber(doc.exchangeRate) || null,
@@ -400,6 +471,7 @@
         const currency = document.getElementById('docCurrency').value;
         let amount = parseFloat(document.getElementById('docAmount').value);
         const client = document.getElementById('docClient').value.trim();
+        const partyType = document.getElementById('docPartyType').value;
         const notes = document.getElementById('docNotes').value.trim();
         const date = document.getElementById('docDate').value;
 
@@ -417,6 +489,7 @@
         const newDoc = {
             id: Date.now(),
             type: type,
+            partyType: partyType,
             currency: currency,
             amount: amount,
             exchangeRate: exchangeRate,
@@ -435,31 +508,83 @@
                 document.getElementById('docAmount').value = '';
                 document.getElementById('docNotes').value = '';
                 document.getElementById('docClient').value = '';
+                document.getElementById('docPartyType').value = 'client';
                 document.getElementById('docExchangeRate').value = '';
             }
         });
     }
 
+    function requireAdminAccess() {
+        if (sessionStorage.getItem('alKhaznaAdminSession') === 'active') return true;
+        const username = prompt('اسم المستخدم للمدير:');
+        if (username === null) return false;
+        const password = prompt('كلمة مرور المدير:');
+        if (username === 'fathi' && password === '7625') {
+            sessionStorage.setItem('alKhaznaAdminSession', 'active');
+            return true;
+        }
+        alert('❌ بيانات المدير غير صحيحة.');
+        return false;
+    }
+
     function deleteDocument(firebaseKey) {
         if (confirm("⚠️ هل أنت متأكد من رغبتك في حذف هذا السند نهائياً من السحابة؟")) {
-            let password = prompt("🔒 يرجى إدخال كلمة المرور (للمدير):");
-            if (password === "7625") {
+            if (!requireAdminAccess()) return;
+            {
                 showLoader(true);
                 db.ref('transactions/' + firebaseKey).remove((error) => {
                     showLoader(false);
                     if(error) alert("❌ خطأ أثناء الحذف.");
                 });
-            } else if (password !== null) {
-                alert("❌ كلمة المرور غير صحيحة!");
             }
         }
+    }
+
+    function showAccountStatement() {
+        const selector = document.getElementById('statementParty');
+        const value = selector.value;
+        const body = document.getElementById('statementBody');
+        if (!value) {
+            body.innerHTML = '<tr><td colspan="5" style="text-align:center;">اختر عميلًا أو موردًا لعرض كشف الحساب</td></tr>';
+            ['statementEgpIn','statementEgpOut','statementEgpNet'].forEach(id => document.getElementById(id).innerText = formatMoney(0));
+            document.getElementById('statementSarNet').innerText = formatMoney(0, 'ريال');
+            return;
+        }
+        const [partyType, name] = value.split('|');
+        const rows = transactions.filter(doc => doc.partyType === partyType && doc.client === name).sort((a,b) => b.id - a.id);
+        let egpIn = 0, egpOut = 0, sarIn = 0, sarOut = 0;
+        body.innerHTML = '';
+        rows.forEach(doc => {
+            const egp = getEgpAmount(doc), sar = getSarAmount(doc);
+            if (doc.type === 'in') { egpIn += egp; sarIn += sar; } else { egpOut += egp; sarOut += sar; }
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${doc.date}</td><td>${doc.type === 'in' ? 'إيراد' : 'صرف'}</td><td>${doc.currency === 'SAR' ? 'ريال' : 'ج.م'}</td><td>${formatMoney(doc.amount, doc.currency === 'SAR' ? 'ريال' : 'ج.م')}</td><td>${doc.notes}</td>`;
+            body.appendChild(tr);
+        });
+        if (!rows.length) body.innerHTML = '<tr><td colspan="5" style="text-align:center;">لا توجد حركات لهذا الطرف</td></tr>';
+        document.getElementById('statementEgpIn').innerText = formatMoney(egpIn);
+        document.getElementById('statementEgpOut').innerText = formatMoney(egpOut);
+        document.getElementById('statementEgpNet').innerText = formatMoney(egpIn - egpOut);
+        document.getElementById('statementSarNet').innerText = formatMoney(sarIn - sarOut, 'ريال');
+    }
+
+    function printStatement() {
+        const selected = document.getElementById('statementParty').value;
+        if (!selected) { alert('اختر عميلًا أو موردًا أولًا.'); return; }
+        showAccountStatement();
+        const title = document.getElementById('statementParty').selectedOptions[0].textContent;
+        const html = document.getElementById('statementPanel').innerHTML;
+        const printWindow = window.open('', '', 'width=900,height=700');
+        printWindow.document.write(`<html dir="rtl"><head><title>كشف حساب ${title}</title><style>body{font-family:Arial;padding:25px;color:#222}button,select{display:none!important}.card{display:inline-block;width:22%;padding:12px;border:1px solid #ddd;margin:4px}.amount{font-size:20px;font-weight:bold}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ccc;padding:8px;text-align:right}h2{text-align:center}</style></head><body><h2>كشف حساب ${title}</h2>${html}</body></html>`);
+        printWindow.document.close();
+        printWindow.onload = () => { printWindow.print(); printWindow.close(); };
     }
 
     function printReceipt(id) {
         const doc = transactions.find(t => t.id === id);
         if(!doc) return;
 
-        const typeName = doc.type === 'in' ? 'سند قبض نقدية' : 'سند صرف نقدية';
+        const typeName = doc.type === 'in' ? 'سند إيراد' : 'سند صرف';
         const color = doc.type === 'in' ? '#2ecc71' : '#e74c3c';
         const egpDisplay = (doc.currency === 'SAR' && (!doc.exchangeRate || doc.exchangeRate <= 0)) ? 'لا يوجد (بدون سعر صرف)' : formatMoney(doc.finalAmountInEGP);
 
@@ -487,7 +612,8 @@
                         <p>رقم السند: #${doc.id.toString().slice(-6)}</p>
                     </div>
                     <div class="row"><span class="label">التاريخ:</span> <span>${doc.date}</span></div>
-                    <div class="row"><span class="label">جهة التعامل:</span> <span>${doc.client}</span></div>
+                    <div class="row"><span class="label">نوع الطرف:</span> <span>${doc.partyType === 'supplier' ? 'مورد' : 'عميل'}</span></div>
+                    <div class="row"><span class="label">الطرف:</span> <span>${doc.client}</span></div>
                     <div class="row"><span class="label">المبلغ:</span> <span style="font-weight:bold;">${formatMoney(doc.amount, doc.currency === 'SAR' ? 'ريال' : 'ج.م')}</span></div>
                     ${doc.currency === 'SAR' ? `<div class="row"><span class="label">المبلغ بالجنيه:</span> <span>${egpDisplay}</span></div>` : ''}
                     <div class="row"><span class="label">البيان:</span> <span>${doc.notes}</span></div>
@@ -553,6 +679,8 @@
         let totalOut = 0;
         let totalSarIn = 0;
         let totalSarOut = 0;
+        const clientNames = new Set();
+        const supplierNames = new Set();
         const tbody = document.getElementById('tableBody');
         tbody.innerHTML = '';
 
@@ -561,6 +689,10 @@
         sortedData.forEach((doc) => {
             const egpAmount = getEgpAmount(doc);
             const sarAmount = getSarAmount(doc);
+            if (doc.client) {
+                if (doc.partyType === 'supplier') supplierNames.add(doc.client);
+                else clientNames.add(doc.client);
+            }
             if (doc.type === 'in') {
                 totalIn += egpAmount;
                 totalSarIn += sarAmount;
@@ -572,7 +704,7 @@
 
             const row = document.createElement('tr');
             const typeBadge = doc.type === 'in' 
-                ? '<span class="badge badge-in"><i class="fa-solid fa-arrow-down"></i> استلام</span>' 
+                ? '<span class="badge badge-in"><i class="fa-solid fa-arrow-down"></i> إيراد</span>' 
                 : '<span class="badge badge-out"><i class="fa-solid fa-arrow-up"></i> صرف</span>';
             
             const currencySymbol = doc.currency === 'SAR' ? 'ريال' : 'ج.م';
@@ -587,7 +719,8 @@
             row.innerHTML = `
                 <td>#${doc.id.toString().slice(-6)}</td>
                 <td>${typeBadge}</td>
-                <td><span class="client-name"><i class="fa-solid fa-user-tie"></i> ${doc.client || 'غير محدد'}</span></td>
+                <td><span class="badge" style="background:${doc.partyType === 'supplier' ? 'rgba(142,68,173,.12)' : 'rgba(30,55,153,.08)'}; color:${doc.partyType === 'supplier' ? '#8e44ad' : 'var(--primary)'}">${doc.partyType === 'supplier' ? 'مورد' : 'عميل'}</span></td>
+                <td><span class="client-name"><i class="fa-solid ${doc.partyType === 'supplier' ? 'fa-truck-field' : 'fa-user-tie'}"></i> ${doc.client || 'غير محدد'}</span></td>
                 <td>${formatMoney(doc.amount, currencySymbol)}</td>
                 <td>${egpColumnText}</td>
                 <td>${doc.notes}</td>
@@ -615,6 +748,10 @@
             const sarElement = document.getElementById('sarBalance');
             sarElement.innerText = formatMoney(netSarBalance, 'ريال');
             sarElement.style.color = netSarBalance < 0 ? 'var(--danger)' : '#d68910';
+            document.getElementById('totalSarIn').innerText = formatMoney(totalSarIn, 'ريال');
+            document.getElementById('totalSarOut').innerText = formatMoney(totalSarOut, 'ريال');
+            document.getElementById('clientCount').innerText = clientNames.size;
+            document.getElementById('supplierCount').innerText = supplierNames.size;
         }
         
         updateClientsList();
@@ -629,13 +766,14 @@
             const notesMatch = String(doc.notes || '').toLowerCase().includes(searchText);
             const clientMatch = String(doc.client || '').toLowerCase().includes(searchText);
             const amountMatch = doc.amount.toString().includes(searchText);
-            const egpMatch = doc.finalAmountInEGP.toString().includes(searchText);
+            const egpMatch = String(doc.finalAmountInEGP || '').includes(searchText);
             const dateMatch = String(doc.date || '').includes(searchText);
-            const typeText = doc.type === 'in' ? 'استلام قبض' : 'صرف';
+            const typeText = doc.type === 'in' ? 'إيراد' : 'صرف';
+            const partyText = doc.partyType === 'supplier' ? 'مورد' : 'عميل';
             const typeMatch = typeText.includes(searchText);
             const idMatch = idStr.includes(searchText);
 
-            const matchText = notesMatch || clientMatch || amountMatch || egpMatch || dateMatch || typeMatch || idMatch;
+            const matchText = notesMatch || clientMatch || amountMatch || egpMatch || dateMatch || typeMatch || partyText.includes(searchText) || idMatch;
             const matchType = typeFilter === 'all' || doc.type === typeFilter;
             
             return matchText && matchType;
