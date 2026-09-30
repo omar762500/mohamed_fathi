@@ -616,7 +616,7 @@ const firebaseConfig = {
     }
 
     async function addDocument() {
-        if (saveInProgress) return;
+        if (saveInProgress || window.__alKhaznaSaveInProgress === true) return;
         const type = document.getElementById('docType').value;
         const amount = parseFloat(document.getElementById('docAmount').value);
         const client = document.getElementById('docClient').value.trim();
@@ -645,7 +645,12 @@ const firebaseConfig = {
         lastSaveFingerprint = fingerprint;
         lastSaveAt = now;
         saveInProgress = true;
-        document.querySelectorAll('.btn-add').forEach(button => { button.disabled = true; });
+        window.__alKhaznaSaveInProgress = true;
+        document.querySelectorAll('.btn-add').forEach(button => {
+            button.disabled = true;
+            button.dataset.originalHtml = button.innerHTML;
+            button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جارٍ الحفظ...';
+        });
 
         const usedSerials = transactions.map(item => toNumber(item.serialNo)).filter(Boolean);
         const serialNo = usedSerials.length ? Math.max(...usedSerials) + 1 : 1;
@@ -673,7 +678,11 @@ const firebaseConfig = {
             alert(`لم يتم الحفظ: ${reason}`);
         } finally {
             saveInProgress = false;
-            setTimeout(() => document.querySelectorAll('.btn-add').forEach(button => { button.disabled = false; }), 350);
+            window.__alKhaznaSaveInProgress = false;
+            setTimeout(() => document.querySelectorAll('.btn-add').forEach(button => {
+                button.disabled = false;
+                if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
+            }), 350);
         }
     }
 
