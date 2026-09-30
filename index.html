@@ -289,8 +289,27 @@
 
 @media print{.sidebar,.topbar,.quick-actions,.outline-btn,.top-action,.page-intro{display:none!important}.main-area{width:100%;margin:0}.content-area{padding:0}.view{display:none!important}.view.active{display:block!important}.content-card,.welcome-banner{box-shadow:none;border:1px solid #aaa}.welcome-banner{display:block;background:#fff;color:#111}.welcome-banner h2,.welcome-banner p{color:#111}}
 </style>
-<style>#view-movement-out{display:none!important}</style></head>
+<style>#view-movement-out{display:none!important}</style><style id="login-dark-mode-css">
+.login-screen{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,#071a2b,#12395a 55%,#2563eb);direction:rtl}.login-card{width:min(420px,100%);padding:34px 30px;border:1px solid rgba(255,255,255,.18);border-radius:24px;background:rgba(255,255,255,.97);box-shadow:0 24px 70px rgba(0,0,0,.28);text-align:center}.login-logo{width:68px;height:68px;margin:0 auto 14px;border-radius:20px;display:grid;place-items:center;background:linear-gradient(135deg,#2563eb,#38bdf8);color:#fff;font-size:29px;box-shadow:0 12px 25px rgba(37,99,235,.28)}.login-card h1{margin:0;color:#102a43;font-size:23px}.login-card>p{margin:7px 0 24px;color:#718096;font-size:12px}.login-card form{text-align:right}.login-card label{display:block;margin:12px 0 6px;color:#334155;font-size:12px;font-weight:800}.login-input{display:flex;align-items:center;gap:9px;border:1px solid #cbd5e1;border-radius:11px;background:#f8fafc;padding:0 12px}.login-input:focus-within{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}.login-input i{color:#2563eb}.login-input input{width:100%;border:0;outline:0;background:transparent;padding:12px 0;color:#1f2937}.login-submit{width:100%;margin-top:20px;border:0;border-radius:11px;padding:12px;background:linear-gradient(135deg,#1d4ed8,#2563eb);color:#fff;font-weight:800;cursor:pointer}.login-submit:hover{filter:brightness(1.06)}.login-error{min-height:19px;margin-top:9px;color:#b91c1c;font-size:11px;font-weight:700}.login-screen.hidden{display:none}
+body[data-theme="dark"]{background:#0f172a;color:#e5e7eb}body[data-theme="dark"] .main-area,body[data-theme="dark"] .content-area{background:#0f172a}body[data-theme="dark"] .topbar,body[data-theme="dark"] .content-card,body[data-theme="dark"] .page-intro,body[data-theme="dark"] .stat-card,body[data-theme="dark"] .quick-actions button,body[data-theme="dark"] .update-chip,body[data-theme="dark"] .outline-btn,body[data-theme="dark"] .btn-control,body[data-theme="dark"] .card{background:#1f2937;color:#e5e7eb;border-color:#374151}body[data-theme="dark"] .breadcrumb strong,body[data-theme="dark"] .section-heading h3,body[data-theme="dark"] .card-heading h3,body[data-theme="dark"] .page-intro h2,body[data-theme="dark"] .stat-card strong,body[data-theme="dark"] .report-grid strong{color:#f8fafc}body[data-theme="dark"] th{background:#273449;color:#e5e7eb}body[data-theme="dark"] td{border-color:#374151}body[data-theme="dark"] .form-group input,body[data-theme="dark"] .form-group select,body[data-theme="dark"] .filters input,body[data-theme="dark"] .filters select{background:#111827;color:#e5e7eb;border-color:#475569}body[data-theme="dark"] .report-grid>div{background:#111827;border-color:#374151}body[data-theme="dark"] .top-action{background:#1f2937;color:#e5e7eb;border-color:#475569}body[data-theme="dark"] .top-action.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+</style>
+</head>
 <body data-theme="light">
+<div class="login-screen" id="loginScreen" aria-label="تسجيل الدخول">
+  <div class="login-card">
+    <div class="login-logo"><i class="fa-solid fa-vault"></i></div>
+    <h1>مستر نضال عمران</h1>
+    <p>تسجيل الدخول إلى النظام المالي</p>
+    <form id="loginForm" autocomplete="off">
+      <label for="loginUsername">اسم المستخدم</label>
+      <div class="login-input"><i class="fa-solid fa-user"></i><input id="loginUsername" type="text" placeholder="اكتب اسم المستخدم" required autocomplete="username"></div>
+      <label for="loginPassword">كلمة المرور</label>
+      <div class="login-input"><i class="fa-solid fa-lock"></i><input id="loginPassword" type="password" placeholder="اكتب كلمة المرور" required autocomplete="current-password"></div>
+      <div class="login-error" id="loginError" role="alert"></div>
+      <button class="login-submit" type="submit"><i class="fa-solid fa-right-to-bracket"></i> دخول آمن</button>
+    </form>
+  </div>
+</div>
 <div id="loadingIndicator"><i class="fa-solid fa-spinner fa-spin"></i> جاري المزامنة مع السيرفر...</div>
 <div class="app-shell">
   <aside class="sidebar" id="side">
@@ -313,14 +332,6 @@
       <button class="side-link" data-view="statement"><i class="fa-solid fa-file-invoice-dollar"></i><span>كشف الحساب</span></button>
     </nav>
     <div class="sidebar-spacer"></div>
-    <div class="nav-label">أدوات</div>
-    <div class="side-tools">
-      <button class="tool-link" onclick="refreshBalances()"><i class="fa-solid fa-arrows-rotate"></i><span>تحديث الأرصدة</span></button>
-      <button class="tool-link" onclick="exportBackup()"><i class="fa-solid fa-download"></i><span>نسخة احتياطية</span></button>
-      <button class="tool-link" onclick="document.getElementById('importFile').click()"><i class="fa-solid fa-upload"></i><span>استيراد نسخة</span></button>
-      <button class="tool-link" id="themeBtn" onclick="toggleTheme()"><i class="fa-solid fa-moon"></i><span>الوضع الداكن</span></button>
-      <input type="file" id="importFile" hidden accept=".json" onchange="importBackup(event)">
-    </div>
     <div class="sidebar-footer"><span id="statusDot" class="status-dot offline"></span><span id="statusText">جاري الاتصال بالسيرفر...</span></div>
   </aside>
 
@@ -332,6 +343,7 @@
       </div>
       <div class="server-status" title="حالة الاتصال بالسيرفر"><span id="topStatusDot" class="status-dot offline"></span><span id="topStatusText">جاري الاتصال بالسيرفر...</span></div><div class="topbar-actions">
         <button class="top-action primary" id="refreshBalancesBtn" type="button" onclick="refreshBalances()"><i class="fa-solid fa-arrows-rotate"></i><span>تحديث</span></button>
+        <button class="top-action" id="themeBtn" type="button" onclick="toggleTheme()" title="تبديل الوضع الليلي"><i class="fa-solid fa-moon"></i><span>ليلي</span></button>
         <button class="top-action" type="button" onclick="window.print()"><i class="fa-solid fa-print"></i><span>طباعة</span></button>
       </div>
     </header>
@@ -392,6 +404,38 @@
 <div class="toast" id="toast"></div>
 <div class="modal-back" id="modalBack"><div class="modal" id="modal"></div></div>
 
+<script id="login-and-theme">
+(function(){
+  const loginScreen=document.getElementById('loginScreen');
+  const loginForm=document.getElementById('loginForm');
+  const loginError=document.getElementById('loginError');
+  const themeBtn=document.getElementById('themeBtn');
+  function updateThemeButton(){
+    if(!themeBtn)return;
+    const dark=document.body.getAttribute('data-theme')==='dark';
+    themeBtn.innerHTML=dark?'<i class="fa-solid fa-sun"></i><span>نهاري</span>':'<i class="fa-solid fa-moon"></i><span>ليلي</span>';
+    themeBtn.title=dark?'تفعيل الوضع النهاري':'تفعيل الوضع الليلي';
+  }
+  window.applySavedTheme=function(){
+    const theme=localStorage.getItem('alKhaznaTheme')==='dark'?'dark':'light';
+    document.body.setAttribute('data-theme',theme); updateThemeButton();
+  };
+  window.toggleTheme=function(){
+    const next=document.body.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.body.setAttribute('data-theme',next); localStorage.setItem('alKhaznaTheme',next); updateThemeButton();
+  };
+  applySavedTheme();
+  if(sessionStorage.getItem('alKhaznaLoggedIn')==='true') loginScreen.classList.add('hidden');
+  loginForm?.addEventListener('submit',function(e){
+    e.preventDefault();
+    const username=document.getElementById('loginUsername').value.trim();
+    const password=document.getElementById('loginPassword').value;
+    if(username==='nidhal' && password==='1974'){
+      sessionStorage.setItem('alKhaznaLoggedIn','true'); loginScreen.classList.add('hidden'); loginError.textContent='';
+    }else{ loginError.textContent='اسم المستخدم أو كلمة المرور غير صحيحة'; }
+  });
+})();
+</script>
 <script>
 const firebaseConfig = {
         apiKey: "AIzaSyDy3tQYSEY_QH_Q5vPkUv765UifPqpDb1IM",
@@ -425,11 +469,6 @@ const firebaseConfig = {
     document.getElementById('docDate').valueAsDate = new Date();
     let transactions = [];
 
-    if(localStorage.getItem('alKhaznaTheme') === 'dark') {
-        document.body.setAttribute('data-theme', 'dark');
-        document.getElementById('themeBtn').innerHTML = '<i class="fa-solid fa-sun"></i>';
-    }
-
     async function refreshBalances() {
         const btn = document.getElementById('refreshBalancesBtn');
         const oldHtml = btn ? btn.innerHTML : '';
@@ -459,18 +498,6 @@ const firebaseConfig = {
                 btn.disabled = false;
                 btn.innerHTML = oldHtml;
             }
-        }
-    }
-
-    function toggleTheme() {
-        if(document.body.getAttribute('data-theme') === 'dark') {
-            document.body.setAttribute('data-theme', 'light');
-            localStorage.setItem('alKhaznaTheme', 'light');
-            document.getElementById('themeBtn').innerHTML = '<i class="fa-solid fa-moon"></i>';
-        } else {
-            document.body.setAttribute('data-theme', 'dark');
-            localStorage.setItem('alKhaznaTheme', 'dark');
-            document.getElementById('themeBtn').innerHTML = '<i class="fa-solid fa-sun"></i>';
         }
     }
 
@@ -597,7 +624,7 @@ const firebaseConfig = {
     function requireDeletePassword() {
         const code = prompt('أدخل الكود السري لتأكيد الحذف:');
         if (code === null) return false;
-        if (code === '8402') return true;
+        if (code === '1974') return true;
         alert('❌ الكود السري غير صحيح.');
         return false;
     }
